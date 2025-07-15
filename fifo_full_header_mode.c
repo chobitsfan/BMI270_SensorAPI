@@ -380,7 +380,15 @@ int main(void)
     rslt = bmi2_map_data_int(fifoframe.data_int_map, BMI2_INT1, &bmi2_dev);
     bmi2_error_codes_print_result(rslt);
 
-    while (try <= 10)
+    uint8_t sensortime_raw[3] = { 0 };
+    rslt = bmi2_get_regs(BMI2_CHIP_ID_ADDR, sensortime_raw, 3, &bmi2_dev);
+    if (rslt == BMI2_OK) {
+        uint32_t sensortime = 0;
+        sensortime = (uint32_t)sensortime_raw[0] | ((uint32_t)sensortime_raw[1] << 8) | ((uint32_t)sensortime_raw[2] << 16);
+        printf("sensor time (s) %f\n", sensortime * BMI2_SENSORTIME_RESOLUTION);
+    }
+
+    while (try <= 2)
     {
         /* Read FIFO data on interrupt. */
         rslt = bmi2_get_int_status(&int_status, &bmi2_dev);
@@ -487,7 +495,7 @@ static int8_t set_accel_gyro_config(struct bmi2_dev *bmi2_dev)
         /* NOTE: The user can change the following configuration parameters according to their requirement. */
         /* Accel configuration settings. */
         /* Set Output Data Rate */
-        config[0].cfg.acc.odr = BMI2_ACC_ODR_50HZ;
+        config[0].cfg.acc.odr = BMI2_ACC_ODR_200HZ;
 
         /* Gravity range of the sensor (+/- 2G, 4G, 8G, 16G). */
         config[0].cfg.acc.range = BMI2_ACC_RANGE_2G;
@@ -512,7 +520,7 @@ static int8_t set_accel_gyro_config(struct bmi2_dev *bmi2_dev)
 
         /* Gyro configuration settings. */
         /* Set Output Data Rate */
-        config[1].cfg.gyr.odr = BMI2_GYR_ODR_50HZ;
+        config[1].cfg.gyr.odr = BMI2_GYR_ODR_200HZ;
 
         /* Gyroscope Angular Rate Measurement Range.By default the range is 2000dps. */
         config[1].cfg.gyr.range = BMI2_GYR_RANGE_2000;
@@ -525,7 +533,7 @@ static int8_t set_accel_gyro_config(struct bmi2_dev *bmi2_dev)
          *  0 -> Ultra low power mode(Default)
          *  1 -> High performance mode
          */
-        config[1].cfg.gyr.noise_perf = BMI2_POWER_OPT_MODE;
+        config[1].cfg.gyr.noise_perf = BMI2_PERF_OPT_MODE;
 
         /* Enable/Disable the filter performance mode where averaging of samples
          * will be done based on above set bandwidth and ODR.
